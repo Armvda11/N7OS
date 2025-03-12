@@ -212,10 +212,4 @@ void console_putbytes(const char *s, int len)
     printf("\n### FIN DES TESTS ###\n");
 }
 
-void log_to_file(const char* message) {
-    FILE* file = fopen("kernel.log", "a"); // Ouvre en mode ajout
-    if (file) {
-        fprintf(file, "%s\n", message);
-        fclose(file);
-    }
-}
+
