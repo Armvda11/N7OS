@@ -1,11 +1,19 @@
+// fichier qui gère la mémoire physique du système et qui permet de gérer les pages mémoires libres et allouées.
+// mem.c
+#include "inttypes.h"
+#include "n7OS/kheap.h"
+#include "types.h"
 #include <n7OS/mem.h>
-#include <n7OS/kheap.h>
-#include <stdio.h>
 
-#define TOTAL_PAGES (LAST_MEMORY_INDEX / PAGE_SIZE)  // 16 Mo / 4 Ko = 4096 pages
-#define BITMAP_SIZE (TOTAL_PAGES / 32)  // 4096 / 32 = 128 entrées
 
-static uint32_t memory_bitmap[BITMAP_SIZE];  // Bitmap mémoire (1 = alloué, 0 = libre)
+/** le bitmap pour savoir les pages libres */
+static bitmap_t bmp;
+
+/** le début de l'espace mémoire réservé pour toutes les pages */
+static uint32_t adresse_premiere_page;
+
+
+
 
 /**
  * @brief Marque la page allouée
@@ -15,69 +23,69 @@ static uint32_t memory_bitmap[BITMAP_SIZE];  // Bitmap mémoire (1 = alloué, 0 
  * @param addr Adresse de la page à allouer
  */
 void setPage(uint32_t addr) {
-    uint32_t page_index = addr / PAGE_SIZE;
-    memory_bitmap[page_index / 32] |= (1 << (page_index % 32));
+  BITMAP_SET(bmp, PAGE_ADR_TO_INDEX(addr), PAGE_ALLOUE);
 }
 
 /**
  * @brief Désalloue la page
+ * 
+ * Libère la page allouée.
+ * 
  * @param addr Adresse de la page à libérer
  */
 void clearPage(uint32_t addr) {
-    uint32_t page_index = addr / PAGE_SIZE;
-    memory_bitmap[page_index / 32] &= ~(1 << (page_index % 32));
-}
-
-uint32_t findfreePage() {
-    for (uint32_t i = 0; i < BITMAP_SIZE; i++) {
-        if (memory_bitmap[i] != 0xFFFFFFFF) {
-            for (uint32_t j = 0; j < 32; j++) {
-                if (!(memory_bitmap[i] & (1 << j))) {
-                    uint32_t addr = (i * 32 + j) * PAGE_SIZE;
-                    setPage(addr);
-                    return addr;
-                }
-            }
-        }
-    }
-    return (uint32_t)-1;  // Aucune page libre trouvée
+  BITMAP_SET(bmp, PAGE_ADR_TO_INDEX(addr), PAGE_LIBRE);
 }
 
 /**
- * @brief Initialise le bitmap mémoire
+ * @brief Fourni la première page libre de la mémoire physique tout en l'allouant
  * 
- * Initialise le bitmap mémoire en marquant toutes les pages comme libres
+ * @return uint32_t Adresse de la page sélectionnée
+ */
+uint32_t findfreePage() {
+  uint32_t index = 0;
+
+  while (index < NOMBRE_PAGES) {
+    if (!BITMAP_IS_SEGMENT_FULL(bmp, index)) { // Vérifie si un bloc est plein
+      while (BITMAP_GET(bmp, index)) {
+        index++;
+        if (index >= NOMBRE_PAGES)
+          return 0; // Plus de mémoire disponible
+      }
+      BITMAP_SET(bmp, index, PAGE_ALLOUE);
+      return PAGE_INDEX_TO_ADR(index);
+    }
+    index += TAILLE_UNITE_BITMAP; // Sauter directement les blocs pleins
+  }
+
+  return 0;
+}
+
+
+
+/**
+ * @brief Initialise le gestionnaire de mémoire physique
+ * 
  */
 void init_mem() {
-    // Initialisation du bitmap mémoire (toutes les pages sont libres)
-    for (uint32_t i = 0; i < BITMAP_SIZE; i++) {
-        memory_bitmap[i] = 0;
-    }
-    // Marquage des pages réservées pour le noyau
-    for (uint32_t addr = 0; addr < 0x100000; addr += PAGE_SIZE) {
-        setPage(addr);
-    }
+  bmp = (bitmap_t) kmalloc_a(BITMAP_TAILLE_TABLEAU(NOMBRE_PAGES) * sizeof(BITMAP_SEGMENT_TYPE));
+  if (!bmp) {
+    printf("Erreur : Impossible d'allouer le bitmap de gestion mémoire\n");
+    return;
+  }
+  BITMAP_FILL(bmp, NOMBRE_PAGES, 0);
+
+  adresse_premiere_page = 0;
 }
 
-void print_mem(uint32_t limit) {
-    for (uint32_t i = 0; i < limit; i++) {
-        uint32_t word_index = i / 32;
-        uint32_t bit_index = i % 32;
-        printf("%s ", (memory_bitmap[word_index] & (1 << bit_index)) ? "[X]" : "[ ]");
-        if ((i + 1) % 16 == 0) printf("\n");
-    }
-    printf("\n");
-}
-
-void freePage(uint32_t addr) {
-    uint32_t page_index = addr / PAGE_SIZE;
-    uint32_t word_index = page_index / 32;
-    uint32_t bit_index = page_index % 32;
-
-    if (!(memory_bitmap[word_index] & (1 << bit_index))) {
-        printf("Erreur: La page 0x%x est déjà libre !\n", addr);
-        return;
-    }
-
-    clearPage(addr);
+/**
+ * @brief Affiche l'état de la mémoire physique
+ * 
+ */
+void print_mem() {
+  int n = 0;
+  for (size_t i = 0; i < NOMBRE_PAGES; i++) {
+    n += BITMAP_GET(bmp, i);
+  }
+  printf("nombre de pages utilisées = %d\n", n);
 }

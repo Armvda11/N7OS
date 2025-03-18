@@ -1,106 +1,107 @@
 #include <n7OS/paging.h>
 #include <n7OS/kheap.h>
 #include <n7OS/mem.h>
-#include <n7OS/console.h>
-#include <string.h>
-#include <stdio.h>
+#include "inttypes.h"
+#include "string.h"
+#include "stdio.h"
+#include "types.h"
 
-PageDirectory *kernel_directory;
+PageDirectory pageDirectory;
 
-/** Initialise une entrée de table des pages */
-void setPageEntry(page_table_entry_t *entry, uint32_t new_page, int is_writeable, int is_kernel) {
-    if (!entry) return;  // Protection contre un pointeur NULL
+#define BIT_PAGING 0x80000000;
+/** Affiche les informations de pagination */
 
-    entry->present = 1;
-    entry->rw = is_writeable;
-    entry->user = is_kernel ? 0 : 1;
-    entry->frame_addr = new_page >> 12;
+
+/** initialiser une entrée de la table des pages avec les paramètres donnés */
+void setPageEntry(PTE *page_table_entry, uint32_t new_page, int is_writeable, int is_kernel) {
+  page_table_entry->page_entry.present= 1;
+  page_table_entry->page_entry.accessed= 0;
+  page_table_entry->page_entry.dirty= 0;
+  page_table_entry->page_entry.rw= is_writeable;
+  page_table_entry->page_entry.user= ~is_kernel;
+  page_table_entry->page_entry.page= new_page>>12;
 }
 
 
-/** Mappe une adresse virtuelle à une adresse physique */
-void map_page(uint32_t virtual_address, uint32_t physical_address) {
-    if (!kernel_directory) {
-        printf("Erreur: kernel_directory non initialisé !\n");
-        return;
-    }
+uint32_t initialise_paging() {
 
-    uint32_t directory_index = virtual_address >> 22;
-    uint32_t table_index = (virtual_address >> 12) & 0x3FF;
+  /* marqueur pour savoir où s'arrête la mémoire actuellement
+   * allouée au kernel */
+  uint32_t index= 0;
 
-    if (!kernel_directory->entries[directory_index].present) {
-        PageTable *new_table = (PageTable *) kmalloc_a(sizeof(PageTable));
-        if (!new_table) {
-            printf("Erreur: Échec de l'allocation d'une table de pages !\n");
-            return;
-        }
-        memset(new_table, 0, sizeof(PageTable));
+  /* initialiser la mémoire physique */
+  init_mem();
 
-        kernel_directory->entries[directory_index].present = 1;
-        kernel_directory->entries[directory_index].rw = 1;
-        kernel_directory->entries[directory_index].frame_addr = ((uint32_t)new_table) >> 12;
-    }
+  pageDirectory= (PageDirectory) kmalloc_a (sizeof(PDE) * 1024);
+  memset(pageDirectory, 0, sizeof(PDE) * 1024);
 
-    PageTable *table = (PageTable *) (kernel_directory->entries[directory_index].frame_addr << 12);
-    setPageEntry(&table->entries[table_index], physical_address, 1, 1);
-}
+  for (size_t i = 0; i < 1024; ++i) {
+    // PageTable new_page_table = (PageTable) findfreePage();
+    PageTable new_page_table= (PageTable) kmalloc_a(sizeof(PTE)*1024);
+    memset(new_page_table, 0, sizeof(PTE) * 1024);
+    pageDirectory[i].dir_entry.present = 1;
+    pageDirectory[i].dir_entry.rw = 1;
+    pageDirectory[i].dir_entry.page_table = 0xfffff & (((uint32_t) new_page_table) >> 12);
+    index= (uint32_t) new_page_table + sizeof(PTE) * 1024;
+  }
 
-/** Initialise la pagination */
-void initialise_paging() {
-    printf("=== Initialisation de la pagination ===\n");
+  /* IMPORTANT: on mappe toute la mémoire actuellement utilisée
+   * sinon on pourra plus y accéder après activation de la pagination */
+  for (size_t i = 0; i < index; i += PAGE_SIZE) {
+    alloc_page_entry(i, 1, 1);
+  }
 
-    init_mem();
 
-    kernel_directory = (PageDirectory *) kmalloc_a(sizeof(PageDirectory));
-    if (!kernel_directory) {
-        printf("Erreur: Échec de l'allocation de kernel_directory !\n");
-        return;
-    } 
-    memset(kernel_directory, 0, sizeof(PageDirectory));
 
-    // Allocation des tables de pages uniquement si nécessaire
-    for (int i = 0; i < 256; ++i) { // Uniquement les pages nécessaires (ex: 1 Mo)
-        PageTable *new_page_table = (PageTable *) kmalloc_a(sizeof(PageTable));
-        if (!new_page_table) {
-            printf("Erreur: Échec de l'allocation d'une table de pages !\n");
-            return;
-        }
-        memset(new_page_table, 0, sizeof(PageTable));
+  /* load l'adresse du page directory dans le registre cr3 */
+  __asm__ __volatile__("mov %0, %%cr3" : : "r" (pageDirectory));
+  
+  /* lire et afficher l'adresse du registre cr3 */
+  uint32_t cr3;
+  __asm__ __volatile__("mov %%cr3, %0" : "=r" (cr3));
 
-        kernel_directory->entries[i].present = 1;
-        kernel_directory->entries[i].rw = 1;
-        kernel_directory->entries[i].frame_addr = ((uint32_t)new_page_table) >> 12;
-    }
 
-    for (uint32_t i = 0; i < 0x100000; i += PAGE_SIZE) {
-        map_page(i, i);
-    }
 
-    printf("Pagination activée !\n");
+
+//   /* activer le paging en mettant à 1 le bon bit */
+  uint32_t cr0;
+  __asm__ __volatile__("mov %%cr0, %0" : "=r" (cr0));
+  cr0 = cr0 | BIT_PAGING;
+   __asm__ __volatile__("mov %0, %%cr0" : : "r" (cr0));
+
+
+//   printf("page directory", pageDirectory);
+
+
+  return (uint32_t) pageDirectory;
 }
 
 
-/** Allocation d'une page virtuelle */
-PageTable* alloc_page_entry(uint32_t address, int is_writeable, int is_kernel) {
-    uint32_t directory_index = address >> 22;
-    uint32_t table_index = (address >> 12) & 0x3FF;
 
-    // si la table des pages n'existe pas, on la crée et on l'ajoute à la table des pages
-    if (!kernel_directory->entries[directory_index].present) {
-        // on crée une nouvelle table des pages
-        PageTable *new_table = (PageTable *) kmalloc_a(sizeof(PageTable));
-        // on l'initialise
-        memset(new_table, 0, sizeof(PageTable));
-        kernel_directory->entries[directory_index].present = 1; // on la rend présente
-        kernel_directory->entries[directory_index].rw = 1; // on la rend accessible en écriture
-        kernel_directory->entries[directory_index].frame_addr = ((uint32_t)new_table) >> 12; // on lui donne l'adresse de la table des pages
-    }
+PageTable alloc_page_entry(uint32_t address, int is_writeable, int is_kernel ) {
+  /* address = adresse virtuelle à allouer 
+   * address = idx_PDE | idx_PTE | offset
+   *             10    |    10   |   12
+   */
 
-    // on récupère la table des pages
-    PageTable *table = (PageTable *)(kernel_directory->entries[directory_index].frame_addr << 12);
-    uint32_t physical_page = findfreePage(); // on trouve une page libre et on la récupère
+  PageTable page_table;
 
+  /* on recupere l'entree dans le répertoire de page
+  * une entree contient l'adresse de la table de page + bits de controle */
+  PDE page_dir_entry = pageDirectory[(address >> 22)]; 
 
-    setPageEntry(&table->entries[table_index], physical_page, is_writeable, is_kernel); // on initialise l'entrée de la table des pages
-    return table;
+  /* on recupere l'adresse de la page de table dans le répertoire de page */
+  page_table = (PTE*) (page_dir_entry.dir_entry.page_table << 12);
+
+  /* recherche d'une page libre dans la memoire physique */
+  uint32_t phy_page = findfreePage(); 
+  //setPage(phy_page);
+
+//  printf("phy_page: %x\n", phy_page);
+
+  /* mise a jour de l'entree dans la page de table */
+  setPageEntry(&page_table[0x3ff & (address >> 12)],
+               phy_page, is_writeable, is_kernel);
+
+  return page_table;
 }
