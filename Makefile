@@ -1,6 +1,11 @@
 KERNEL=kernel.bin
 PXE=boot.PXE
 
+<<<<<<< HEAD
+=======
+
+
+>>>>>>> prepa/main
 include build/build_env.mak
 
 OBJCOPY= objcopy

@@ -46,6 +46,7 @@
 #include <string.h>	/* strlen */
 #include <doprnt.h>
 
+<<<<<<< HEAD
 // copied/pasted from stackoverflow
 #if defined __has_cpp_attribute
     #if __has_cpp_attribute(fallthrough)
@@ -57,6 +58,8 @@
     #define MY_FALLTHROUGH
 #endif
 
+=======
+>>>>>>> prepa/main
 /*
  *  Common code for printf et al.
  *
@@ -391,7 +394,11 @@ void _doprnt(fmt, args, radix, putc, putc_arg)
 
 		case 'o':
  		    truncate = _doprnt_truncates;
+<<<<<<< HEAD
 			MY_FALLTHROUGH;
+=======
+			[[fallthrough]];
+>>>>>>> prepa/main
 		case 'O':
 		    base = 8;
 		    goto print_unsigned;
@@ -399,7 +406,11 @@ void _doprnt(fmt, args, radix, putc, putc_arg)
 		case 'd':
 	        case 'i':
  		    truncate = _doprnt_truncates;
+<<<<<<< HEAD
 			MY_FALLTHROUGH;
+=======
+			[[fallthrough]];
+>>>>>>> prepa/main
 		case 'D':
 		    base = 10;
 		    goto print_signed;
@@ -480,7 +491,11 @@ void _doprnt(fmt, args, radix, putc, putc_arg)
 
 		case 'u':
  		    truncate = _doprnt_truncates;
+<<<<<<< HEAD
 			MY_FALLTHROUGH;
+=======
+			[[fallthrough]];
+>>>>>>> prepa/main
 		case 'U':
 		    base = 10;
 		    goto print_unsigned;
@@ -495,31 +510,50 @@ void _doprnt(fmt, args, radix, putc, putc_arg)
 		     */
 		    (*putc)(putc_arg, '0');
 		    (*putc)(putc_arg, 'x');
+<<<<<<< HEAD
 			MY_FALLTHROUGH;
 		case 'x':
  		    truncate = _doprnt_truncates;
 			MY_FALLTHROUGH;
+=======
+			[[fallthrough]];
+		case 'x':
+ 		    truncate = _doprnt_truncates;
+			[[fallthrough]];
+>>>>>>> prepa/main
 		case 'X':
 		    base = 16;
 		    goto print_unsigned;
 
 		case 'z':
  		    truncate = _doprnt_truncates;
+<<<<<<< HEAD
 			MY_FALLTHROUGH;
+=======
+			[[fallthrough]];
+>>>>>>> prepa/main
 		case 'Z':
 		    base = 16;
 		    goto print_signed;
 
 		case 'r':
  		    truncate = _doprnt_truncates;
+<<<<<<< HEAD
 			MY_FALLTHROUGH;
+=======
+			[[fallthrough]];
+>>>>>>> prepa/main
 		case 'R':
 		    base = radix;
 		    goto print_signed;
 
 		case 'n':
  		    truncate = _doprnt_truncates;
+<<<<<<< HEAD
 			MY_FALLTHROUGH;
+=======
+			[[fallthrough]];
+>>>>>>> prepa/main
 		case 'N':
 		    base = radix;
 		    goto print_unsigned;

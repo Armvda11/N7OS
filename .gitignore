@@ -1,0 +1,26 @@
+# Ignorer les fichiers binaires générés
+*.bin
+*.o
+
+# Ignorer les fichiers de sauvegarde
+*~
+
+# Ignorer les fichiers de core dump
+core
+
+# Ignorer les fichiers de build spécifiques
+bin/app.o
+kernel/kernel.o
+kernel/task_dump_screen.o
+boot/crt0.o
+kernel.bin
+
+# Ignorer les fichiers de log de QEMU
+qemu.log
+
+# Ignorer les fichiers temporaires
+*.tmp
+*.temp
+
+# Ignorer les archives
+*.tgz

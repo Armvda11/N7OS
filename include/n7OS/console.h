@@ -32,10 +32,19 @@
 #define WHITE   0xF
 
 // Character color: blink|back|text
+<<<<<<< HEAD
 #define BLINK   (0<<7)
 #define BACK    (BLACK<<4)
 #define TEXT    WHITE 
 #define CHAR_COLOR (BLINK|BACK|TEXT)
+=======
+#define BLINK   0<<7
+#define BACK    BLACK<<4
+#define TEXT    YELLOW
+#define CHAR_COLOR BLINK|BACK|TEXT
+#define MAX_CURSOR_POS (VGA_WIDTH * VGA_HEIGHT)
+
+>>>>>>> prepa/main
 
 void init_console();
 
