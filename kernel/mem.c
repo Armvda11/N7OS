@@ -28,11 +28,7 @@ static uint32_t adresse_premiere_page;
  * @param addr Adresse de la page à allouer
  */
 void setPage(uint32_t addr) {
-<<<<<<< HEAD
-
-=======
   BITMAP_SET(bmp, PAGE_ADR_TO_INDEX(addr), PAGE_ALLOUE);
->>>>>>> prepa/main
 }
 
 /**
@@ -43,11 +39,7 @@ void setPage(uint32_t addr) {
  * @param addr Adresse de la page à libérer
  */
 void clearPage(uint32_t addr) {
-<<<<<<< HEAD
-
-=======
   BITMAP_SET(bmp, PAGE_ADR_TO_INDEX(addr), PAGE_LIBRE);
->>>>>>> prepa/main
 }
 
 /**
@@ -56,13 +48,6 @@ void clearPage(uint32_t addr) {
  * @return uint32_t Adresse de la page sélectionnée
  */
 uint32_t findfreePage() {
-<<<<<<< HEAD
-    uint32_t adresse= 0x0;
-
-    return adresse;
-}
-
-=======
   uint32_t index = 0;
 
   while (index < NOMBRE_PAGES) {
@@ -83,15 +68,11 @@ uint32_t findfreePage() {
 
 
 
->>>>>>> prepa/main
 /**
  * @brief Initialise le gestionnaire de mémoire physique
  * 
  */
 void init_mem() {
-<<<<<<< HEAD
-
-=======
   bmp = (bitmap_t) kmalloc_a(BITMAP_TAILLE_TABLEAU(NOMBRE_PAGES) * sizeof(BITMAP_SEGMENT_TYPE));
   if (!bmp) {
     printf("Erreur : Impossible d'allouer le bitmap de gestion mémoire\n");
@@ -100,7 +81,6 @@ void init_mem() {
   BITMAP_FILL(bmp, NOMBRE_PAGES, 0);
 
   adresse_premiere_page = 0;
->>>>>>> prepa/main
 }
 
 /**
@@ -108,14 +88,9 @@ void init_mem() {
  * 
  */
 void print_mem() {
-<<<<<<< HEAD
-    
-}
-=======
   int n = 0;
   for (size_t i = 0; i < NOMBRE_PAGES; i++) {
     n += BITMAP_GET(bmp, i);
   }
   printf("nombre de pages utilisées = %d\n", n);
 }
->>>>>>> prepa/main

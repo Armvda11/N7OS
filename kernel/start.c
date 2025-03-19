@@ -1,21 +1,5 @@
 #include <n7OS/cpu.h>
 #include <inttypes.h>
-<<<<<<< HEAD
-#include <n7OS/processor_structs.h>
-#include <n7OS/console.h>
-
-void kernel_start(void)
-{
-    init_console();
-    setup_base(0 /* la memoire virtuelle n'est pas encore definie */);
-
-    // lancement des interruptions
-    sti();
-
-    // on ne doit jamais sortir de kernel_start
-    while (1) {
-        // cette fonction arrete le processeur
-=======
 #include <n7OS/console.h>
 #include <n7OS/mem.h>
 #include <n7OS/paging.h>
@@ -74,7 +58,6 @@ void kernel_start(void)
 
     // Boucle infinie pour éviter la sortie du kernel
     while (1) {
->>>>>>> prepa/main
         hlt();
     }
 }

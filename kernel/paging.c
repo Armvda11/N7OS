@@ -1,16 +1,4 @@
 #include <n7OS/paging.h>
-<<<<<<< HEAD
-#include <stddef.h> // nécessaire pour NULL
-
-void initialise_paging() {
-
-}
-
-PageTable alloc_page_entry(uint32_t address, int is_writeable, int is_kernel) {
-    PageTable pgtab= NULL;
-
-    return pgtab;
-=======
 #include <n7OS/kheap.h>
 #include <n7OS/mem.h>
 #include "inttypes.h"
@@ -116,5 +104,4 @@ PageTable alloc_page_entry(uint32_t address, int is_writeable, int is_kernel ) {
                phy_page, is_writeable, is_kernel);
 
   return page_table;
->>>>>>> prepa/main
 }

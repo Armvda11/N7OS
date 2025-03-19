@@ -37,11 +37,8 @@ uint32_t kmalloc_ap(uint32_t sz, uint32_t *phys) {
 uint32_t kmalloc(uint32_t sz) {
     return kmalloc_int(sz, 0, 0);
 }
-<<<<<<< HEAD
-=======
 
 void kmalloc_init() {
     printf("Initialisation du tas du noyau à l'adresse 0x%x\n", &mem_heap);
     placement_address = (uint32_t)&mem_heap;
 }
->>>>>>> prepa/main
